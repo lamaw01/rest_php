@@ -13,7 +13,7 @@ $message = isset($_GET['message']) ? $_GET['message'] : null;
 $token = isset($_GET['token']) ? $_GET['token'] : null;
 
 $messagefrom = isset($_GET['messagefrom']) ? $_GET['messagefrom'] : '';
-$servicetype = isset($_GET['servicetype ']) ? $_GET['servicetype '] : '1';
+$servicetype = isset($_GET['servicetype']) ? $_GET['servicetype'] : '1';
 $cilentIp = $_SERVER['REMOTE_ADDR'];
 
 // Define required parameters
@@ -29,11 +29,18 @@ foreach ($requiredParams as $param => $value) {
     }
 }
 
+// If everything is fine, you can proceed with your logic
+// header('HTTP/1.1 200 OK');
+// echo json_encode(['message' => 'Request successful', 'requiredParams' => $requiredParams, 'optionalParams' => $optionalParams]);
+
+// Check ip and token
 checkAuth($token, $cilentIp);
 
+// OpenVox
 if($servicetype == '1'){
     // Example usage
     $url1 = 'http://172.21.3.18/sendsms'; // Replace with your target URL
+
     $params1 = [
         'username' => 'ovsms',
         'password' => 'ovSMS@2020',
@@ -42,88 +49,66 @@ if($servicetype == '1'){
         'id' => 'missmsapi',
     ];
 
-    sendOpenvox($url1, $params1);
+    $response = sendOpenvox($url1, $params1);
 
-// }else if($servicetype == '2'){
-//     // Example usage
-//     $url2 = 'http://172.21.3.32/goip/en/dosend.php'; // Replace with your target URL
-//     $params2 = [
-//         'USERNAME' => 'sms-api',
-//         'PASSWORD' => '5m5-AP1',
-//         'smsnum' => $phonenumber,
-//         'Memo' => $message,
-//         'smsprovider' => '1',
-//         'method' => '2',
-//     ];
+    $data = [
+        'reply' => $response,
+        'sender' => $messagefrom,
+        'phonenumber' => $phonenumber,
+        'message' => $message,
+        'token' => $token,
+        'servicetype' => $servicetype,
+        'messagefrom' => $messagefrom,
+    ];
 
-//     // sendGoip1($url2, $params2);
-    
-// }else{
+    $result = insertApiLog('api_log', $data);
 
-//     header('HTTP/1.1 200 OK');
-//     echo json_encode(['error' => 'Invalid Service type']);
+    header('HTTP/1.1 200 OK');
+    echo json_encode(['message' => 'Request successful', 'id' => $result]);
 
 }
 
-// If everything is fine, you can proceed with your logic
-// header('HTTP/1.1 200 OK');
-// echo json_encode(['message' => 'Request successful', 'requiredParams' => $requiredParams, 'optionalParams' => $optionalParams]);
+// GoIp
+else if($servicetype == '2'){
+    // Example usage
+    $url2 = 'http://172.21.3.32/goip/en/dosend.php'; // Replace with your target URL
 
+    $params2 = [
+        'USERNAME' => 'sms-api',
+        'PASSWORD' => '5m5-AP1',
+        'smsnum' => $phonenumber,
+        'Memo' => $message,
+        'smsprovider' => '1',
+        'method' => '2',
+    ];
 
-function sendOpenvox(string $url, array $params): void {
-    // Build query string from the parameters array
-    $queryString = http_build_query($params);
+    $response = sendGoip1($url2, $params2);
+
+    $data = [
+        'reply' => $response,
+        'sender' => $messagefrom,
+        'phonenumber' => $phonenumber,
+        'message' => $message,
+        'token' => $token,
+        'servicetype' => $servicetype,
+        'messagefrom' => $messagefrom,
+    ];
+
+    $result = insertApiLog('api_log', $data);
+
+    header('HTTP/1.1 200 OK');
+    echo json_encode(['message' => 'Request successful', 'id' => $result]);
     
-    // Append query string to the URL
-    $fullUrl = $url . '?' . $queryString;
-
-    // Initialize cURL session
-    $ch = curl_init($fullUrl);
-
-    // Set cURL options
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return the response as a string
-
-    // Execute the GET request
-    $response = curl_exec($ch);
-
-    
-
-    // Check for errors
-    if ($response === false) {
-        echo 'cURL Error: ' . curl_error($ch);
-        // header('HTTP/1.1 500 Method Not Allowed');
-        // echo json_encode(['error' => 'Internal Server Error']);
-    } else {
-        // echo 'Response: ' . $response; // Display the response
-
-        $data = [
-            'reply' => $response,
-            'sender' => $messagefrom,
-            'phonenumber' => $phonenumber,
-            'message' => $message,
-            'token' => $token,
-            'servicetype' => $servicetype,
-            'messagefrom' => $messagefrom,
-        ];
-
-        $result = insertApiLog('api_log', $data);
-
-        if (is_numeric($result)) {
-            echo "Data inserted successfully with ID: $result";
-        } else {
-            echo $result; // Print the error message
-        }
-
-
-        // header('HTTP/1.1 200 OK');
-        // echo json_encode(['message' => 'Request successful', 'id' => $result]);
-    }
-
-    // Close cURL session
-    curl_close($ch);
 }
 
-function sendGoip1(string $url, array $params): void {
+else{
+
+    header('HTTP/1.1 200 OK');
+    echo json_encode(['error' => 'Invalid Service type']);
+
+}
+
+function sendOpenvox(string $url, array $params) {
     // Build query string from the parameters array
     $queryString = http_build_query($params);
     
@@ -142,16 +127,46 @@ function sendGoip1(string $url, array $params): void {
     // Check for errors
     if ($response === false) {
         // echo 'cURL Error: ' . curl_error($ch);
-        header('HTTP/1.1 500 Method Not Allowed');
-        echo json_encode(['error' => 'Internal Server Error']);
     } else {
         // echo 'Response: ' . $response; // Display the response
-        $position1 = strpos($response,"messageid=");
-        $position2 = strpos($response,"&USERNAME=");
+        return $response;
+    }
+    
+    // Close cURL session
+    curl_close($ch);
+}
+
+function sendGoip1(string $url, array $params) {
+    // Build query string from the parameters array
+    $queryString = http_build_query($params);
+    
+    // Append query string to the URL
+    $fullUrl = $url . '?' . $queryString;
+
+    // Initialize cURL session
+    $ch = curl_init($fullUrl);
+
+    // Set cURL options
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return the response as a string
+
+    // Execute the GET request
+    $response = curl_exec($ch);
+
+    // Check for errors
+    if ($response === false) {
+        // echo 'cURL Error: ' . curl_error($ch);
+    } else {
+        // echo 'Response: ' . $response; // Display the response
+        $position1 = strpos($response, "messageid=");
+
+        $position2 = strpos($response, "&USERNAME=");
+
         $pos1new = $position1 + 10;
-        $id = substr($response,$pos1new,$position2-$pos1new);
+
+        $id = substr($response, $pos1new, $position2-$pos1new);
 
         $url3 = 'http://172.21.3.32/goip/en/resend.php'; // Replace with your target URL
+
         $params3 = [
             'messageid' => $id,
             'USERNAME' => 'sms-api',
@@ -160,15 +175,16 @@ function sendGoip1(string $url, array $params): void {
 
         usleep(200000);
 
-        sendGoip2($url3, $params3);
+        $goip2Response = sendGoip2($url3, $params3);
+
+        return $goip2Response;
     }
 
     // Close cURL session
     curl_close($ch);
 }
 
-
-function sendGoip2(string $url, array $params): void {
+function sendGoip2(string $url, array $params) {
     // Build query string from the parameters array
     $queryString = http_build_query($params);
     
@@ -187,25 +203,9 @@ function sendGoip2(string $url, array $params): void {
     // Check for errors
     if ($response === false) {
         // echo 'cURL Error: ' . curl_error($ch);
-        header('HTTP/1.1 500 Method Not Allowed');
-        echo json_encode(['error' => 'Internal Server Error']);
     } else {
         // echo 'Response: ' . $response; // Display the response
-
-        $data = [
-            'reply' => $response,
-            'sender' => $messagefrom,
-            'phonenumber' => $phonenumber,
-            'message' => $message,
-            'token' => $token,
-            'servicetype' => $servicetype,
-            'messagefrom' => $messagefrom,
-        ];
-
-        $result = insertApiLog('api_log', $data);
-
-        header('HTTP/1.1 200 OK');
-        echo json_encode(['message' => 'Request successful', 'id' => $result]);
+        return $response;
     }
 
     // Close cURL session
@@ -242,28 +242,6 @@ function insertApiLog($table, $data) {
     $mysqli->close();
 }
 
-
-// $data = [
-//     'reply' => '1',
-//     'sender' => '2',
-//     'phonenumber' => '3',
-//     'message' => '4',
-//     'token' => '5',
-//     'servicetype' => '6',
-//     'messagefrom' => '7',
-// ];
-
-// $result = insertApiLog('api_log', $data);
-
-// if (is_numeric($result)) {
-//     echo "Data inserted successfully with ID: $result";
-// } else {
-//     echo $result; // Print the error message
-// }
-
-
-
-
 function checkAuth($whereToken, $whereAddress) {
     // Usage example:
     $mysqli = new mysqli("localhost", "janrey.dumaog", "janr3yD", "sms_api");
@@ -284,9 +262,6 @@ function checkAuth($whereToken, $whereAddress) {
 
         // Fetch the result
         if ($stmt->fetch()) {
-            // If everything is fine, you can proceed with your logic
-            // header('HTTP/1.1 200 OK');
-            // echo json_encode(['message' => 'Request successful', 'requiredParams' => $whereToken, 'optionalParams' => $whereAddress]);
             // return $result; // Return the fetched value
         } else {
             header('HTTP/1.1 401 Unauthorized');
@@ -300,21 +275,5 @@ function checkAuth($whereToken, $whereAddress) {
 
     $mysqli->close();
 }
-
-
-
-// "SELECT * FROM token WHERE token = :token AND address = :address AND active = 1"
-// $whereToken = '7ca04a3af82999d90c60f06cf3780d99';
-// $whereAddress = '103.62.153.11';
-
-// $result = checkAuth($$whereToken, $whereAddress);
-
-// if ($result !== null) {
-//     echo "Authorized.";
-// } else {
-//     echo "Unauthorized.";
-// }
-
-
 
 ?>
