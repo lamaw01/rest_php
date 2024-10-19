@@ -23,7 +23,7 @@ $guideJson = [
     ],
     '5. servicetype' => [
         'description' => 'Select what service to choose.',
-        'format' => '0 or 1',
+        'format' => '1 or 2',
         'necessity' => 'Optional',
     ],
 ];
