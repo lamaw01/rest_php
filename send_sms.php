@@ -3,7 +3,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 
 $guideJson = [
-    'Usage' => 'http://103.62.153.74:53000/rest_php/send_sms.php?phonenumber=xxx&message=xxx&token=xxx&messagefrom=xxx&servicetype=xxx',
+    'Usage' => 'http://192.168.221.21/sms_api/send_sms?phonenumber=xxx&message=xxx&token=xxx&messagefrom=xxx&servicetype=xxx',
     '1. phonenumber' => [
         'description' => 'Destination phonenumber to which the message is to be sent.',
         'format' => '+639670266317 or 09670266317',
