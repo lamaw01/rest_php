@@ -2,36 +2,20 @@
 header('Content-Type: application/json; charset=utf-8');
 
 
-$guideJson = [
-    'Usage' => 'http://192.168.221.21/sms_api/send_sms?phonenumber=xxx&message=xxx&token=xxx&messagefrom=xxx&servicetype=xxx',
-    '1. phonenumber' => [
-        'description' => 'Destination phonenumber to which the message is to be sent.',
-        'format' => '+639670266317 or 09670266317',
-        'necessity' => 'Required',
-    ],
-    '2. message' => [
-        'description' => 'Message to be sent.',
-        'necessity' => 'Required',
-    ],
-    '3. token' => [
-        'description' => 'Used for autentication. Token and IP should match.',
-        'necessity' => 'Required',
-    ],
-    '4. messagefrom' => [
-        'description' => 'String which message sent from.',
-        'necessity' => 'Optional',
-    ],
-    '5. servicetype' => [
-        'description' => 'Select what service to choose.',
-        'format' => '1 or 2',
-        'necessity' => 'Optional',
-    ],
-];
+function showGuide(string $url = ''){
+    $guideFile = fopen("guide.txt", "r") or die("Unable to open file!");
+    
+    $guideText = fread($guideFile,filesize("guide.txt"));
+
+    fclose($guideFile);
+
+    return $url . $guideText;
+}
 
 // Check if the request method is GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     header('HTTP/1.1 405 Method Not Allowed');
-    echo json_encode(['error' => 'Method Not Allowed', 'message'=>$guideJson]);
+    echo showGuide('Method Not Allowed');
     exit;
 }
 
@@ -52,7 +36,8 @@ $optionalParams = ['messagefrom' => $messagefrom, 'servicetype' => $servicetype,
 foreach ($requiredParams as $param => $value) {
     if (is_null($value)) {
         header('HTTP/1.1 400 Bad Request');
-        echo json_encode(['error' => "Missing parameter: $param", 'message'=>$guideJson]);
+        // echo json_encode(['error' => "Missing parameter: $param", 'message'=>$guideJson]);
+        echo showGuide("Missing parameter: $param");
         exit;
     }
 }
@@ -63,7 +48,7 @@ foreach ($requiredParams as $param => $value) {
 // exit;
 
 // Check ip and token
-checkAuth($token, $cilentIp, $guideJson);
+checkAuth($token, $cilentIp);
 
 // OpenVox
 if($servicetype == '1'){
@@ -93,7 +78,7 @@ if($servicetype == '1'){
     $result = insertApiLog('api_log', $data);
 
     header('HTTP/1.1 200 OK');
-    echo json_encode(['message' => 'Request successful', 'id' => $result]);
+    echo showGuide("Request successful, id: $result");
 
 }
 
@@ -126,14 +111,14 @@ else if($servicetype == '2'){
     $result = insertApiLog('api_log', $data);
 
     header('HTTP/1.1 200 OK');
-    echo json_encode(['message' => 'Request successful', 'id' => $result]);
+    echo showGuide("Request successful, id: $result");
     
 }
 
 else{
 
     header('HTTP/1.1 200 OK');
-    echo json_encode(['error' => 'Invalid Service type', 'message'=>$guideJson]);
+    echo showGuide("Invalid Service type");
 
 }
 
@@ -270,7 +255,7 @@ function insertApiLog($table, $data) {
     $mysqli->close();
 }
 
-function checkAuth($whereToken, $whereAddress, $guideJson) {
+function checkAuth($whereToken, $whereAddress) {
     // Usage example:
     $mysqli = new mysqli("localhost", "janrey.dumaog", "janr3yD", "sms_api");
 
@@ -293,7 +278,8 @@ function checkAuth($whereToken, $whereAddress, $guideJson) {
             // return $result; // Return the fetched value
         } else {
             header('HTTP/1.1 401 Unauthorized');
-            echo json_encode(['error' => 'Unauthorized', 'message'=>$guideJson]);
+            // echo json_encode(['error' => 'Unauthorized', 'message'=>$guideJson]);
+            echo showGuide("Unauthorized");
             exit;
             // return null; // Return null if no result is found
         }
