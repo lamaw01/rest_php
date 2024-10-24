@@ -2,15 +2,28 @@
 header('Content-Type: application/json; charset=utf-8');
 
 
-function showGuide(string $url = ''){
+function showGuide(string $message = '') {
     $guideFile = fopen("guide.txt", "r") or die("Unable to open file!");
     
     $guideText = fread($guideFile,filesize("guide.txt"));
 
     fclose($guideFile);
 
-    return $url . $guideText;
+    return $message . $guideText;
 }
+
+function writeLog(string $message = ''): void {
+    $logFile = fopen("log.txt", "a") or die("Unable to open file!");
+
+    $newline = "\n";
+    
+    fwrite($logFile, $message . $newline);
+
+    fclose($logFile);
+}
+
+// writeLog('write log init');
+// exit;
 
 // Check if the request method is GET
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
@@ -141,6 +154,10 @@ function sendOpenvox(string $url, array $params) {
     // Check for errors
     if ($response === false) {
         // echo 'cURL Error: ' . curl_error($ch);
+        $error = 'sendOpenvox cURL Error: ' . curl_error($ch);
+
+        writeLog($error);
+
     } else {
         // echo 'Response: ' . $response; // Display the response
         return $response;
@@ -169,6 +186,10 @@ function sendGoip1(string $url, array $params) {
     // Check for errors
     if ($response === false) {
         // echo 'cURL Error: ' . curl_error($ch);
+        $error = 'sendGoip1 cURL Error: ' . curl_error($ch);
+
+        writeLog($error);
+
     } else {
         // echo 'Response: ' . $response; // Display the response
         $position1 = strpos($response, "messageid=");
@@ -216,6 +237,10 @@ function sendGoip2(string $url, array $params) {
     // Check for errors
     if ($response === false) {
         // echo 'cURL Error: ' . curl_error($ch);
+        $error = 'sendGoip2 cURL Error: ' . curl_error($ch);
+
+        writeLog($error);
+
     } else {
         // echo 'Response: ' . $response; // Display the response
         return $response;
@@ -244,12 +269,25 @@ function insertApiLog($table, $data) {
 
         // Execute the statement
         if ($stmt->execute()) {
+
             return $stmt->insert_id; // Return the ID of the inserted row
+
         } else {
-            return "Error: " . $stmt->error;
+
+            $error = "insertApiLog Error: " . $stmt->error;
+            
+            writeLog($error);
+
+            return $error;
+            
         }
     } else {
-        return "Error: " . $mysqli->error;
+        
+        $error = "insertApiLog Error: " . $mysqli->error;
+            
+        writeLog($error);
+
+        return $error;
     }
 
     $mysqli->close();
@@ -284,7 +322,12 @@ function checkAuth($whereToken, $whereAddress) {
             // return null; // Return null if no result is found
         }
     } else {
-        return "Error: " . $mysqli->error; // Return error message if statement preparation fails
+
+        $error = "checkAuth Error: " . $mysqli->error;
+
+        writeLog($error);
+
+        return $error; // Return error message if statement preparation fails
     }
 
     $mysqli->close();
