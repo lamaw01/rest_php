@@ -1,6 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
-
+ini_set('display_errors', 1);
 
 function showGuide(string $message = '') {
     $guideFile = fopen("guide.txt", "r") or die("Unable to open file!");
@@ -79,7 +79,7 @@ if($servicetype == '1'){
     $response = sendOpenvox($url1, $params1);
 
     $data = [
-        'reply' => $response,
+        'reply' => $response === NULL ? '' : $response,
         'sender' => $messagefrom,
         'phonenumber' => $phonenumber,
         'message' => $message,
@@ -98,7 +98,7 @@ if($servicetype == '1'){
 // GoIp
 else if($servicetype == '2'){
     // Example usage
-    $url2 = 'http://172.21.3.32/goip/en/dosend.php'; // Replace with your target URL
+    $url2 = 'https://172.21.3.32/goip/en/dosend.php'; // Replace with your target URL
 
     $params2 = [
         'USERNAME' => 'sms-api',
@@ -111,8 +111,11 @@ else if($servicetype == '2'){
 
     $response = sendGoip1($url2, $params2);
 
+    // header('HTTP/1.1 200 OK');
+    // echo showGuide("Response: $response");
+
     $data = [
-        'reply' => $response,
+        'reply' => $response === NULL ? '' : $response,
         'sender' => $messagefrom,
         'phonenumber' => $phonenumber,
         'message' => $message,
@@ -179,6 +182,8 @@ function sendGoip1(string $url, array $params) {
 
     // Set cURL options
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return the response as a string
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);  // Disable SSL verification for the host
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);  // Disable SSL verification for the peer
 
     // Execute the GET request
     $response = curl_exec($ch);
@@ -199,7 +204,7 @@ function sendGoip1(string $url, array $params) {
 
         $id = substr($response, $pos1new, $position2-$pos1new);
 
-        $url3 = 'http://172.21.3.32/goip/en/resend.php'; // Replace with your target URL
+        $url3 = 'https://172.21.3.32/goip/en/resend.php'; // Replace with your target URL
 
         $params3 = [
             'messageid' => $id,
@@ -230,6 +235,9 @@ function sendGoip2(string $url, array $params) {
 
     // Set cURL options
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // Return the response as a string
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);  // Disable SSL verification for the host
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);  // Disable SSL verification for the peer
+    
 
     // Execute the GET request
     $response = curl_exec($ch);
